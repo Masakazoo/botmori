@@ -1,36 +1,45 @@
-# -*- coding: utf-8 -*-
+# coding: UTF-8
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.common.exceptions import NoSuchElementException
+import privacy
 
 import time
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.common.exceptions import NoSuchElementException
 
-# 型号和颜色包含在url中，在官网选择后即可复制链接到此处
+# iPhone 16pro max デザートチタニウム 512Gb
+url = "https://www.apple.com/jp/shop/buy-iphone/iphone-16-pro/6.9%E3%82%A4%E3%83%B3%E3%83%81%E3%83%87%E3%82%A3%E3%82%B9%E3%83%97%E3%83%AC%E3%82%A4-512gb-%E3%83%87%E3%82%B6%E3%83%BC%E3%83%88%E3%83%81%E3%82%BF%E3%83%8B%E3%82%A6%E3%83%A0-sim%E3%83%95%E3%83%AA%E3%83%BC"
 
-# iPhone 16 Pro Max 原色钛金属 256G
-url = "https://www.apple.com.cn/shop/buy-iphone/iphone-16-pro/MYTQ3CH/A"
+appleid_username = privacy.appleid_username
+appleid_password = privacy.appleid_password
+phone_nnumber = privacy.phone_nnumber
+cvv_credit = privacy.cvv_credit
 
-# # iPhone 15 蓝色 128G
-# url = "https://www.apple.com.cn/shop/buy-iphone/iphone-15/MTLG3CH/A"
+# options = webdriver.ChromeOptions()
+# ブラウザ·オブジェクトの作成
+# driver = webdriver.Chrome(options=options)
 
-# 苹果账号邮箱
-appleid_username = 'xxx@xxx.com'
-# 苹果账号密码
-appleid_password = 'password'
-
-# 设置浏览器options
-options = webdriver.ChromeOptions()
-# 加初始化设置（运行完成不会自动关闭浏览器）
+# Setup Chrome options
+options = Options()
+options.add_argument('--remote-debugging-pipe') 
+# 初期化設定の追加 (実行が完了してもブラウザは自動的に閉じないらしい)
 options.add_experimental_option('detach', True)
+# options.add_argument("--headless") # Ensure GUI is off. Remove this line if you want to see the browser navigating.
 
-# 创建浏览器对象
-driver = webdriver.Chrome(options=options)
+# Set path to chromedriver as a service
+webdriver_service = Service(ChromeDriverManager().install())
+# Set the driver
+driver = webdriver.Chrome(service=webdriver_service, options=options)
 
 
 def one():
-    # 没有旧机抵扣
+    # 下取り選択
     while True:
         try:
+            # 「下取りを利用しない」要素の選択？
             element_old = driver.find_element(By.ID, 'noTradeIn_label')
             break
         except NoSuchElementException:
@@ -38,117 +47,101 @@ def one():
 
     driver.execute_script("arguments[0].click();", element_old)
 
-    # 无Applecare
-
-    # iPhone16
+    # Applecare選択
     element_care = driver.find_element(By.ID, 'applecareplus_59_noapplecare')
-
-    # # iPhone15
-    # element_care = driver.find_element(By.ID, 'applecareplus_58_noapplecare')
-
     driver.execute_script("arguments[0].click();", element_care)
 
-    # 添加到购物袋
+    # バッグへの追加
     time.sleep(1)
     element_car = driver.find_element(By.XPATH,
-                                      '/html/body/div[2]/div[2]/div[4]/div[2]/div[3]/div[4]/div/div/div/div/div/div[3]/div/div/div/div[2]/div/div/span/form/div/span/button')
-    # element_car = driver.find_element_by_name('add-to-cart')
-    # element_car = driver.find_element_by_css_selector('.add-to-cart')
-    if element_car is not True:
-        element_car = driver.find_element(By.XPATH,
-                                          '//*[@id="root"]/div[2]/div[3]/div[4]/div/div/div/div/div/div[3]/div/div/div/div[2]/div/div/span/form/div/span/button')
-
+                                       '//*[@id="root"]/div[2]/div[3]/div[8]/div/div/div/div/div/div[3]/div/div/div/div[2]/div/div/span/form/div/span/button')
+    # if element_car is not True:
+    #     element_car = driver.find_element(By.XPATH,
+    #                                       '//*[@id="root"]/div[2]/div[3]/div[4]/div/div/div/div/div/div[3]/div/div/div/div[2]/div/div/span/form/div/span/button')
     driver.execute_script("arguments[0].click();", element_car)
 
 
-# 跳转到购买界面
+# iPhone選択画面への遷移
 driver.get(url)
-# 隐式等待
 driver.implicitly_wait(20)
 
 one()
 if driver.current_url == url:
     one()
 
-# 页面跳转查看购物袋
+# iPhone追加後のショッピングバッグへの遷移
 driver.implicitly_wait(10)
 element_check = driver.find_element(By.XPATH, '//*[@id="root"]/div/div[2]/div/div[2]/div/form/button')
 driver.execute_script("arguments[0].click();", element_check)
 
-# 结账
+# 注文手続きへの遷移
 driver.implicitly_wait(10)
 element_check_out = driver.find_element(By.XPATH, '//*[@id="shoppingCart.actions.navCheckout"]')
 driver.execute_script("arguments[0].click();", element_check_out)
 
-# 结账界面跳转时间较长  隐式等待多等一会
+# チェックアウトの待ち時間のために長めに準備(ここは非同期処理で最適化できそう)
 driver.implicitly_wait(30)
 
-# 勾选隐私条款
-element_signin_consent_1 = driver.find_element(By.XPATH,
-                                               '//*[@id="signIn.consentOverlay.dataHandleByApple_label"]/span')
-driver.execute_script("arguments[0].click();", element_signin_consent_1)
-element_signin_consent_2 = driver.find_element(By.XPATH,
-                                               '//*[@id="signIn.consentOverlay.dataOutSideMyCountry_label"]/span')
-driver.execute_script("arguments[0].click();", element_signin_consent_2)
-
-# 同意隐私条款
-element_signin_consent = driver.find_element(By.XPATH, '//*[@id="consent-overlay-accept-button"]')
-driver.execute_script("arguments[0].click();", element_signin_consent)
-
-# 输入用户名
-element_username = driver.find_element(By.XPATH,
-                                       '/html/body/div[2]/div[2]/div[1]/div/div[1]/div/form/div[1]/div[1]/input')
-# time.sleep(3)
-element_username.send_keys(appleid_username)
-
-# 输入密码
-element_password = driver.find_element(By.XPATH,
-                                       '/html/body/div[2]/div[2]/div[1]/div/div[1]/div/form/div[1]/div[2]/input')
-# time.sleep(3)
-element_password.send_keys(appleid_password)
-
-# 登录
-element_login = driver.find_element(By.XPATH, '/html/body/div[2]/div[2]/div[1]/div/div[1]/div/form/div[2]/button')
-driver.execute_script("arguments[0].click();", element_login)
-
-# 如何收到订单商品
-# （点击）继续填写送货地址
-element_next_address = driver.find_element(By.XPATH,
-                                           '/html/body/div[2]/div[2]/div[1]/div[2]/div/div[1]/div[3]/div/div/button')
-driver.execute_script("arguments[0].click();", element_next_address)
-
-# 等待跳转结账
+# iframe変換
+iframe = driver.find_element(By.CSS_SELECTOR, "#aid-auth-widget-iFrame")
+driver.switch_to.frame(iframe)
+# apple IDの入力
 driver.implicitly_wait(10)
+element_username = driver.find_element(By.XPATH,'//*[@id="account_name_text_field"]')
+element_username.send_keys(appleid_username)
+## apple IDのクリック
+time.sleep(3)
+user_name_enter = driver.find_element(By.XPATH, '//*[@id="sign-in"]')
+driver.execute_script("arguments[0].click();", user_name_enter)
 
-# 选择发票（个人抬头）
-element_fapiao = driver.find_element(By.XPATH,
-                                     '/html/body/div[2]/div[2]/div[1]/div[2]/div[1]/div[4]/fieldset/div/div/div[2]/div/div/div/div/label')
-driver.execute_script("arguments[0].click();", element_fapiao)
 
-# （点击）继续选择付款方式
-element_check_out_next = driver.find_element(By.XPATH,
-                                             '/html/body/div[2]/div[2]/div[1]/div[2]/div[1]/div[5]/div/div/div/button')
-driver.execute_script("arguments[0].click();", element_check_out_next)
+# パスワード入力
+element_password = driver.find_element(By.XPATH,'//*[@id="password_text_field"]')
+element_password.send_keys(appleid_password)
+## ユーザーネームクリック
+password_enter = driver.find_element(By.XPATH, '//*[@id="sign-in"]')
+driver.execute_script("arguments[0].click();", password_enter)
 
-# 分期付款（工商银行）
+# end of iframe
+driver.switch_to.default_content()
+# 配送選択※ピックアップなら自身で受け取るで対応
+choice_delivery = driver.find_element(By.XPATH, '//*[@id="rs-checkout-continue-button-bottom"]')
+driver.execute_script("arguments[0].click();", choice_delivery)
+
+# 電話番号入力
+element_phone_number = driver.find_element(By.XPATH,'//*[@id="checkout.shipping.addressContactPhone.address.mobilePhone"]')
+element_phone_number.send_keys(phone_nnumber)
+# 支払い画面への遷移
+payment_transition = driver.find_element(By.XPATH, '//*[@id="rs-checkout-continue-button-bottom"]')
+driver.execute_script("arguments[0].click();", payment_transition)
+
+# 決済情報入力
+driver.implicitly_wait(10)
+chocie_credit_card = driver.find_element(By.XPATH, '//*[@id="checkout.billing.billingoptions.saved_card"]')
+driver.execute_script("arguments[0].click();", chocie_credit_card)
+# クレジットカードのCVV入力
+element_cvv = driver.find_element(By.XPATH,'//*[@id="checkout.billing.billingOptions.selectedBillingOptions.savedCard.cardInputs.cardInput-0.securityCode"]')
+element_cvv.send_keys(cvv_credit)
+
+# 注文確認画面への遷移
+check_order_transition = driver.find_element(By.XPATH, '//*[@id="rs-checkout-continue-button-bottom"]')
+driver.execute_script("arguments[0].click();", check_order_transition)
+
+# debug
+# monitor scroll
+for i in range(10):
+    driver.execute_script('window.scrollBy(0, 100);')
+    print('下へ移動しました')
+    time.sleep(1)
+
+
+# 注文確認画面への遷移
+check_order = driver.find_element(By.XPATH, '//*[@id="rs-checkout-continue-button-bottom"]')
+driver.execute_script("arguments[0].click();", check_order)
+
+# Take a screenshot
+driver.save_screenshot("screenshot.png")
+
+# Quit the driver
 driver.implicitly_wait(20)
-element_fenqi = driver.find_element(By.XPATH,
-                                    '/html/body/div[2]/div[2]/div[1]/div[2]/div/div[1]/div[2]/fieldset/div/div/div[2]/div[5]/div[1]/div[1]/div/div/label')
-driver.execute_script("arguments[0].click();", element_fenqi)
-
-# 24期
-time.sleep(2)
-element_fenqi_24 = driver.find_element(By.XPATH,
-                                       '/html/body/div[2]/div[2]/div[1]/div[2]/div/div[1]/div[2]/fieldset/div/div/div[2]/div[5]/div[2]/div/div/div/div/div[1]/div/ul/li[4]/label')
-driver.execute_script("arguments[0].click();", element_fenqi_24)
-
-# 检查订单（最终）
-element_check_out_next_next = driver.find_element(By.XPATH,
-                                                  '/html/body/div[2]/div[2]/div[1]/div[2]/div/div[1]/div[3]/div/div/button')
-driver.execute_script("arguments[0].click();", element_check_out_next_next)
-driver.implicitly_wait(20)
-time.sleep(15)
-
-# 立即下单
-element_xiadan = driver.find_element(By.ID, 'rs-checkout-continue-button-bottom')
-driver.execute_script("arguments[0].click();", element_xiadan)
+driver.quit()
